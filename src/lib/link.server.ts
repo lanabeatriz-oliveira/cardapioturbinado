@@ -19,7 +19,7 @@ function jsonParaTexto(obj: unknown, out: string[], depth = 0) {
   if (Array.isArray(obj)) return obj.forEach((x) => jsonParaTexto(x, out, depth + 1));
   if (obj && typeof obj === "object") {
     const o = obj as Record<string, unknown>;
-    const nome = o.name ?? o.nome ?? o.title ?? o.description === undefined ? (o.name ?? o.nome ?? o.title) : undefined;
+    const nome = o.name ?? o.nome ?? o.title;
     const desc = o.description ?? o.details ?? o.descricao;
     const preco = o.unitPrice ?? o.price ?? o.preco ?? (o.offers as any)?.price;
     if (typeof (o.name ?? o.nome ?? o.title) === "string" && (desc || preco !== undefined)) {

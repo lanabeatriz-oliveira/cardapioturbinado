@@ -26,6 +26,18 @@ export const resultadoSchema = z.object({
   combos: z.array(
     z.object({ nome: z.string(), itens: z.array(z.string()), motivo: z.string() }),
   ),
+  numeros: z.object({
+    totalItens: z.number(),
+    itensComDescricao: z.number(),
+    totalBurgers: z.number(),
+    burgersComPeso: z.number(),
+    combos: z.number(),
+    adicionais: z.number(),
+    menorPrecoBurger: z.number().nullable(),
+    maiorPrecoBurger: z.number().nullable(),
+    precoMedioBurger: z.number().nullable(),
+    incoerenciasPreco: z.number(),
+  }),
 });
 export type Resultado = z.infer<typeof resultadoSchema>;
 
@@ -42,6 +54,7 @@ Estrutura:
 - topAcoes: exatamente 3, as de maior impacto, em linguagem simples.
 - reescrito: todos os itens do cardápio (até 30), antes e depois de nome e descrição. "observacao" diz o que o dono precisa completar, ou "".
 - combos: 2 ou 3.
+- numeros: contagens REAIS do cardápio original (não estime vendas). totalItens = todos os itens à venda; itensComDescricao = itens que já têm descrição; totalBurgers = hambúrgueres/lanches; burgersComPeso = burgers com gramatura/peso informado; combos = combos existentes no cardápio; adicionais = adicionais existentes; menor/maior/precoMedioBurger em reais (número, ex.: 29.9), null se não houver preços; incoerenciasPreco = quantidade de incoerências de preço que você apontou.
 O QUE AVALIAR EM CADA CRITÉRIO:
 - "Nome claro": nomes criativos (ex.: "X-Monstro") precisam deixar claro o que vem no lanche.
 - "Descrição que dá vontade": tipo de pão, blend/carne, queijo, molho da casa, acompanhamentos dentro do lanche, textura (crocante, suculento, cremoso).
@@ -53,9 +66,11 @@ O QUE AVALIAR EM CADA CRITÉRIO:
 
 export const analisarCardapio = createServerFn({ method: "POST" })
   .inputValidator(
-    (input: { texto: string; imagens: string[]; nome: string }) => {
-      if (!input.texto?.trim() && !input.imagens?.length)
-        throw new Error("Envie uma foto ou cole o texto do cardápio.");
+    (input: { texto: string; imagens: string[]; nome: string; link?: string }) => {
+      if (!input.texto?.trim() && !input.imagens?.length && !input.link?.trim())
+        throw new Error("Envie um link, uma foto ou cole o texto do cardápio.");
+      if (input.link?.trim() && !/^https?:\/\/[^\s]+$/i.test(input.link.trim()))
+        throw new Error("Esse link não parece válido. Ele deve começar com https://");
       if (input.imagens.length > 6) throw new Error("Envie no máximo 6 fotos.");
       return input;
     },
@@ -70,7 +85,15 @@ export const analisarCardapio = createServerFn({ method: "POST" })
       apiKey,
       headers: { "Lovable-API-Key": apiKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
     });
-    const intro = `Restaurante: ${data.nome || "(não informado)"}\n\nCardápio em texto:\n${data.texto || "(veja as fotos)"}`;
+    let doLink = "";
+    if (data.link?.trim()) {
+      const { lerLink, pareceCardapio } = await import("./link.server");
+      const lido = await lerLink(data.link.trim());
+      if (pareceCardapio(lido)) doLink = lido;
+      else if (!data.texto?.trim() && !data.imagens.length)
+        throw new Error("Não consegui ler esse link. Tente colar o texto do cardápio ou enviar prints (até 6).");
+    }
+    const intro = `Restaurante: ${data.nome || "(não informado)"}\n\nCardápio em texto:\n${data.texto || "(veja as fotos ou o link)"}${doLink ? `\n\nConteúdo extraído do link do cardápio (pode ter textos do site misturados; use só os itens do cardápio):\n${doLink}` : ""}`;
     const result = streamText({
       model: openai.responses("openai/gpt-6-astra"),
       system: SYSTEM,
