@@ -29,22 +29,31 @@ export const resultadoSchema = z.object({
 });
 export type Resultado = z.infer<typeof resultadoSchema>;
 
-const SYSTEM = `Você é um consultor de cardápios de delivery para pequenos restaurantes brasileiros. Responda sempre em português do Brasil, com tom amigável, direto e sem jargão.
+const SYSTEM = `Você é um consultor de cardápios de delivery especializado em hamburguerias brasileiras. Responda sempre em português do Brasil, com tom amigável, direto e sem jargão.
 Leia o cardápio (texto e/ou fotos) e analise-o.
 REGRAS OBRIGATÓRIAS:
 - Nunca invente ingredientes, preços ou itens que não estejam no cardápio. Se faltar informação, sugira que o dono a acrescente (ex.: "informe o peso", "[informe os ingredientes]").
 - Não altere preços; apenas aponte incoerências. No campo "preco" copie o preço exatamente como está (ou "" se não houver).
 - Combos só com itens que já existem no cardápio; não sugira preço de combo.
+- Se o cardápio claramente não for de hamburgueria, analise mesmo assim e avise isso no resumo.
 Estrutura:
 - notaGeral: 0 a 100.
 - criterios: exatamente 7, nesta ordem e com estes nomes: "Nome claro", "Descrição que dá vontade", "Informação de porção", "Coerência de preço", "Combos e adicionais", "Organização", "Destaques e erros". nota de 0 a 10; explicacao curta; exemplo citando algo real do cardápio.
 - topAcoes: exatamente 3, as de maior impacto, em linguagem simples.
 - reescrito: todos os itens do cardápio (até 30), antes e depois de nome e descrição. "observacao" diz o que o dono precisa completar, ou "".
-- combos: 2 ou 3.`;
+- combos: 2 ou 3.
+O QUE AVALIAR EM CADA CRITÉRIO:
+- "Nome claro": nomes criativos (ex.: "X-Monstro") precisam deixar claro o que vem no lanche.
+- "Descrição que dá vontade": tipo de pão, blend/carne, queijo, molho da casa, acompanhamentos dentro do lanche, textura (crocante, suculento, cremoso).
+- "Informação de porção": gramatura do blend (ex.: 150g, 180g), quantidade de carnes (simples/duplo/triplo), se a batata é individual ou para dividir.
+- "Coerência de preço": lanche com mais ingredientes mais barato que um mais simples; versão dupla que não compensa; preço de batata/bebida avulsas vs. em combo.
+- "Combos e adicionais": combo lanche + batata + bebida, adicionais (bacon, cheddar extra, carne extra, ovo), opção de dobrar a carne, sobremesa.
+- "Organização": categorias típicas (Burgers, Combos, Acompanhamentos, Bebidas, Sobremesas, Adicionais) e excesso de lanches parecidos.
+- "Destaques e erros": indicar o carro-chefe/mais pedido, ponto da carne quando aplicável, opções vegetarianas se existirem, erros de português e itens duplicados.`;
 
 export const analisarCardapio = createServerFn({ method: "POST" })
   .inputValidator(
-    (input: { texto: string; imagens: string[]; nome: string; tipo: string }) => {
+    (input: { texto: string; imagens: string[]; nome: string }) => {
       if (!input.texto?.trim() && !input.imagens?.length)
         throw new Error("Envie uma foto ou cole o texto do cardápio.");
       if (input.imagens.length > 6) throw new Error("Envie no máximo 6 fotos.");
@@ -61,7 +70,7 @@ export const analisarCardapio = createServerFn({ method: "POST" })
       apiKey,
       headers: { "Lovable-API-Key": apiKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
     });
-    const intro = `Restaurante: ${data.nome || "(não informado)"}\nTipo de comida: ${data.tipo || "(não informado)"}\n\nCardápio em texto:\n${data.texto || "(veja as fotos)"}`;
+    const intro = `Restaurante: ${data.nome || "(não informado)"}\n\nCardápio em texto:\n${data.texto || "(veja as fotos)"}`;
     const result = streamText({
       model: openai.responses("openai/gpt-6-astra"),
       system: SYSTEM,
