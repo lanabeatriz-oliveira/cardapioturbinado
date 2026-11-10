@@ -54,7 +54,7 @@ export const analisarCardapio = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { createOpenAI } = await import("@ai-sdk/openai");
     const { streamText, Output } = await import("ai");
-    const apiKey = process.env.LOVABLE_API_KEY;
+    const apiKey = process.env["LOVABLE_API_KEY"];
     if (!apiKey) throw new Error("IA não configurada.");
     const openai = createOpenAI({
       baseURL: "https://ai.gateway.lovable.dev/v1",
