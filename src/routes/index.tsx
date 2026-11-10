@@ -52,7 +52,6 @@ function Index() {
   const [texto, setTexto] = useState("");
   const [imagens, setImagens] = useState<string[]>([]);
   const [nome, setNome] = useState("");
-  const [tipo, setTipo] = useState("");
   const analisar = useServerFn(analisarCardapio);
 
   async function enviar() {
@@ -60,7 +59,7 @@ function Index() {
     if (!texto.trim() && !imagens.length) return setErro("Envie uma foto ou cole o texto do cardápio.");
     setEtapa("carregando");
     try {
-      const r = await analisar({ data: { texto, imagens, nome, tipo } });
+      const r = await analisar({ data: { texto, imagens, nome } });
       setResultado(r);
       setEtapa("resultado");
       window.scrollTo(0, 0);
@@ -71,7 +70,7 @@ function Index() {
   }
 
   function reiniciar() {
-    setTexto(""); setImagens([]); setNome(""); setTipo(""); setResultado(null);
+    setTexto(""); setImagens([]); setNome(""); setResultado(null);
     setEtapa("entrada"); window.scrollTo(0, 0);
   }
 
@@ -81,7 +80,7 @@ function Index() {
         <section className="flex min-h-[85vh] flex-col items-center justify-center text-center">
           <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-hot text-3xl shadow-card">🔥</div>
           <h1 className="text-5xl font-extrabold tracking-tight">Cardápio <span className="text-primary">Turbo</span></h1>
-          <p className="mt-4 max-w-sm text-lg text-muted-foreground">Descubra o que está fazendo seu cardápio perder pedidos</p>
+          <p className="mt-4 max-w-sm text-lg text-muted-foreground">Descubra o que está fazendo sua hamburgueria perder pedidos</p>
           <button onClick={() => setEtapa("entrada")} className="mt-8 rounded-full bg-hot px-8 py-4 text-lg font-bold text-primary-foreground shadow-card transition hover:scale-105">
             Analisar meu cardápio
           </button>
@@ -113,12 +112,9 @@ function Index() {
           </div>
           <div className="rounded-3xl bg-card p-5 shadow-card">
             <label className="font-bold" htmlFor="texto">📝 Ou cole o texto</label>
-            <textarea id="texto" value={texto} onChange={(e) => setTexto(e.target.value)} rows={7} placeholder={"X-Burguer - R$ 25\nPão, carne, queijo..."} className="mt-3 w-full rounded-2xl border bg-background p-3 outline-none focus:ring-2 focus:ring-ring" />
+            <textarea id="texto" value={texto} onChange={(e) => setTexto(e.target.value)} rows={7} placeholder={"X-Salada - R$ 25\nPão brioche, blend 150g, queijo prato, alface, tomate, molho da casa\nBatata frita - R$ 18\nCoca-Cola 350ml - R$ 8"} className="mt-3 w-full rounded-2xl border bg-background p-3 outline-none focus:ring-2 focus:ring-ring" />
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome do restaurante (opcional)" className="rounded-2xl border bg-card p-3 outline-none focus:ring-2 focus:ring-ring" />
-            <input value={tipo} onChange={(e) => setTipo(e.target.value)} placeholder="Tipo de comida (opcional)" className="rounded-2xl border bg-card p-3 outline-none focus:ring-2 focus:ring-ring" />
-          </div>
+          <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome da hamburgueria (opcional)" className="w-full rounded-2xl border bg-card p-3 outline-none focus:ring-2 focus:ring-ring" />
           {erro && <p className="rounded-2xl bg-destructive/10 p-3 font-medium text-destructive">{erro}</p>}
           <button onClick={enviar} className="w-full rounded-full bg-hot py-4 text-lg font-bold text-primary-foreground shadow-card">Analisar agora</button>
         </section>
