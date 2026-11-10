@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { analisarCardapio, type Resultado } from "@/lib/analyze.functions";
+import { calcularNumeros } from "@/lib/numeros";
+import { gerarPdf, deliverFile } from "@/lib/pdf";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -52,14 +54,15 @@ function Index() {
   const [texto, setTexto] = useState("");
   const [imagens, setImagens] = useState<string[]>([]);
   const [nome, setNome] = useState("");
+  const [link, setLink] = useState("");
   const analisar = useServerFn(analisarCardapio);
 
   async function enviar() {
     setErro("");
-    if (!texto.trim() && !imagens.length) return setErro("Envie uma foto ou cole o texto do cardápio.");
+    if (!texto.trim() && !imagens.length && !link.trim()) return setErro("Envie um link, uma foto ou cole o texto do cardápio.");
     setEtapa("carregando");
     try {
-      const r = await analisar({ data: { texto, imagens, nome } });
+      const r = await analisar({ data: { texto, imagens, nome, link } });
       setResultado(r);
       setEtapa("resultado");
       window.scrollTo(0, 0);
@@ -70,7 +73,7 @@ function Index() {
   }
 
   function reiniciar() {
-    setTexto(""); setImagens([]); setNome(""); setResultado(null);
+    setTexto(""); setImagens([]); setNome(""); setLink(""); setResultado(null);
     setEtapa("entrada"); window.scrollTo(0, 0);
   }
 
@@ -91,7 +94,11 @@ function Index() {
         <section className="space-y-5">
           <h2 className="text-3xl font-extrabold">Seu cardápio</h2>
           <div className="rounded-3xl bg-card p-5 shadow-card">
-            <label className="font-bold">📸 Fotos do cardápio</label>
+            <label className="font-bold" htmlFor="link">🔗 Link do cardápio (iFood, site ou cardápio digital)</label>
+            <input id="link" type="url" value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://..." className="mt-3 w-full rounded-2xl border bg-background p-3 outline-none focus:ring-2 focus:ring-ring" />
+          </div>
+          <div className="rounded-3xl bg-card p-5 shadow-card">
+            <label className="font-bold">📸 Ou envie fotos do cardápio</label>
             <input type="file" accept="image/*" multiple className="mt-3 block w-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-accent file:px-4 file:py-2 file:font-bold file:text-accent-foreground"
               onChange={async (e) => {
                 const files = Array.from(e.target.files || []);
@@ -121,7 +128,7 @@ function Index() {
       )}
 
       {etapa === "carregando" && <Carregando />}
-      {etapa === "resultado" && resultado && <ResultadoView r={resultado} onNovo={reiniciar} />}
+      {etapa === "resultado" && resultado && <ResultadoView r={resultado} nome={nome} onNovo={reiniciar} />}
     </main>
   );
 }
@@ -160,14 +167,41 @@ function Card({ children }: { children: React.ReactNode }) {
   return <div className="rounded-3xl bg-card p-5 shadow-card">{children}</div>;
 }
 
-function ResultadoView({ r, onNovo }: { r: Resultado; onNovo: () => void }) {
+function BotaoPdf({ r, nome }: { r: Resultado; nome: string }) {
+  const [arq, setArq] = useState<{ blob: Blob; filename: string } | null>(null);
+  useEffect(() => { gerarPdf(r, nome).then(setArq).catch(console.error); }, [r, nome]);
+  return (
+    <button disabled={!arq} onClick={() => arq && deliverFile(arq.blob, arq.filename)}
+      className="w-full rounded-full border-2 border-primary bg-card py-3 font-bold text-primary disabled:opacity-50">
+      {arq ? "📄 Baixar relatório em PDF" : "Preparando PDF..."}
+    </button>
+  );
+}
+
+function ResultadoView({ r, nome, onNovo }: { r: Resultado; nome: string; onNovo: () => void }) {
+  const nums = calcularNumeros(r);
   return (
     <section className="space-y-6">
+      <BotaoPdf r={r} nome={nome} />
       <div className="rounded-3xl bg-hot p-6 text-center text-primary-foreground shadow-card">
         <p className="font-bold uppercase tracking-widest opacity-90">Nota geral</p>
         <p className="font-display text-7xl font-extrabold">{Math.round(r.notaGeral)}<span className="text-3xl opacity-80">/100</span></p>
         <p className="mt-2">{r.resumo}</p>
       </div>
+
+      {nums.length > 0 && (
+        <div>
+          <h2 className="mb-3 text-2xl font-extrabold">📈 Raio-x em números</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {nums.map((n, i) => (
+              <div key={i} className="rounded-2xl bg-card p-4 shadow-card">
+                <p className="font-display text-2xl font-extrabold text-primary">{n.valor}</p>
+                <p className="text-sm text-muted-foreground">{n.rotulo}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div>
         <h2 className="mb-3 text-2xl font-extrabold">🚀 Top 3 ações</h2>
@@ -234,6 +268,7 @@ function ResultadoView({ r, onNovo }: { r: Resultado; onNovo: () => void }) {
         </div>
       </div>
 
+      <BotaoPdf r={r} nome={nome} />
       <button onClick={onNovo} className="w-full rounded-full bg-hot py-4 text-lg font-bold text-primary-foreground shadow-card">Analisar outro cardápio</button>
     </section>
   );
