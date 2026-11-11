@@ -19,12 +19,12 @@ function jsonParaTexto(obj: unknown, out: string[], depth = 0) {
   if (Array.isArray(obj)) return obj.forEach((x) => jsonParaTexto(x, out, depth + 1));
   if (obj && typeof obj === "object") {
     const o = obj as Record<string, unknown>;
-    const nome = o.name ?? o.nome ?? o.title;
-    const desc = o.description ?? o.details ?? o.descricao;
-    const preco = o.unitPrice ?? o.price ?? o.preco ?? (o.offers as any)?.price;
-    if (typeof (o.name ?? o.nome ?? o.title) === "string" && (desc || preco !== undefined)) {
+    const nome = o["name"] ?? o["nome"] ?? o["title"];
+    const desc = o["description"] ?? o["details"] ?? o["descricao"];
+    const preco = o["unitPrice"] ?? o["price"] ?? o["preco"] ?? (o["offers"] as any)?.price;
+    if (typeof (o["name"] ?? o["nome"] ?? o["title"]) === "string" && (desc || preco !== undefined)) {
       out.push(
-        [String(o.name ?? o.nome ?? o.title), typeof desc === "string" ? desc : "", preco !== undefined && typeof preco !== "object" ? `R$ ${preco}` : ""]
+        [String(o["name"] ?? o["nome"] ?? o["title"]), typeof desc === "string" ? desc : "", preco !== undefined && typeof preco !== "object" ? `R$ ${preco}` : ""]
           .filter(Boolean)
           .join(" — "),
       );
@@ -58,7 +58,7 @@ export async function lerLink(url: string): Promise<string> {
     ...html.matchAll(/<script[^>]*(?:id="__NEXT_DATA__"|type="application\/(?:ld\+)?json")[^>]*>([\s\S]*?)<\/script>/gi),
   ];
   for (const b of blocos) {
-    try { jsonParaTexto(JSON.parse(b[1]), estruturado); } catch { /* ignora */ }
+    try { jsonParaTexto(JSON.parse(b[1] ?? ""), estruturado); } catch { /* ignora */ }
   }
 
   const visivel = decode(
