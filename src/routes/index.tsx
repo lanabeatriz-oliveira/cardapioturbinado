@@ -1,6 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { SaveAnalysis, type SavedAnalysis } from "@/components/save-analysis";
+import { ComparisonPanel } from "@/components/comparison-panel";
+import type { Comparacao } from "@/lib/comparison";
+import { useEffect, useState, type ReactNode } from "react";
 import { analisarCardapio, type Resultado } from "@/lib/analyze.functions";
 import { calcularNumeros } from "@/lib/numeros";
 import { gerarPdf, deliverFile } from "@/lib/pdf";
@@ -38,7 +42,9 @@ function redimensionar(file: File): Promise<string> {
       const c = document.createElement("canvas");
       c.width = img.width * s;
       c.height = img.height * s;
-      c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
+      const ctx = c.getContext("2d");
+      if (!ctx) { URL.revokeObjectURL(img.src); reject(new Error("Não consegui ler a foto.")); return; }
+      ctx.drawImage(img, 0, 0, c.width, c.height);
       resolve(c.toDataURL("image/jpeg", 0.85));
       URL.revokeObjectURL(img.src);
     };
@@ -84,9 +90,9 @@ function Index() {
           <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-hot text-3xl shadow-card">🔥</div>
           <h1 className="text-5xl font-extrabold tracking-tight">Cardápio <span className="text-primary">Turbo</span></h1>
           <p className="mt-4 max-w-sm text-lg text-muted-foreground">Descubra o que está fazendo sua hamburgueria perder pedidos</p>
-          <button onClick={() => setEtapa("entrada")} className="mt-8 rounded-full bg-hot px-8 py-4 text-lg font-bold text-primary-foreground shadow-card transition hover:scale-105">
+          <Button onClick={() => setEtapa("entrada")} className="mt-8 rounded-full bg-hot px-8 py-4 text-lg font-bold text-primary-foreground shadow-card transition hover:scale-105">
             Analisar meu cardápio
-          </button>
+          </Button>
         </section>
       )}
 
@@ -111,7 +117,7 @@ function Index() {
                 {imagens.map((src, i) => (
                   <div key={i} className="relative">
                     <img src={src} alt={`Foto ${i + 1}`} className="h-20 w-20 rounded-xl object-cover" />
-                    <button aria-label="Remover foto" onClick={() => setImagens((a) => a.filter((_, j) => j !== i))} className="absolute -right-2 -top-2 h-6 w-6 rounded-full bg-foreground text-xs text-background">✕</button>
+                    <Button aria-label="Remover foto" onClick={() => setImagens((a) => a.filter((_, j) => j !== i))} className="absolute -right-2 -top-2 h-6 w-6 rounded-full bg-foreground text-xs text-background">✕</Button>
                   </div>
                 ))}
               </div>
@@ -123,7 +129,7 @@ function Index() {
           </div>
           <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome da hamburgueria (opcional)" className="w-full rounded-2xl border bg-card p-3 outline-none focus:ring-2 focus:ring-ring" />
           {erro && <p className="rounded-2xl bg-destructive/10 p-3 font-medium text-destructive">{erro}</p>}
-          <button onClick={enviar} className="w-full rounded-full bg-hot py-4 text-lg font-bold text-primary-foreground shadow-card">Analisar agora</button>
+          <Button onClick={enviar} className="w-full rounded-full bg-hot py-4 text-lg font-bold text-primary-foreground shadow-card">Analisar agora</Button>
         </section>
       )}
 
@@ -156,33 +162,35 @@ function corNota(n: number, max: number) {
 function Copiar({ texto }: { texto: string }) {
   const [ok, setOk] = useState(false);
   return (
-    <button onClick={() => { navigator.clipboard.writeText(texto); setOk(true); setTimeout(() => setOk(false), 1500); }}
+    <Button onClick={() => { navigator.clipboard.writeText(texto); setOk(true); setTimeout(() => setOk(false), 1500); }}
       className="rounded-full bg-accent px-4 py-1.5 text-sm font-bold text-accent-foreground">
       {ok ? "Copiado ✓" : "Copiar"}
-    </button>
+    </Button>
   );
 }
 
-function Card({ children }: { children: React.ReactNode }) {
+function Card({ children }: { children: ReactNode }) {
   return <div className="rounded-3xl bg-card p-5 shadow-card">{children}</div>;
 }
 
-function BotaoPdf({ r, nome }: { r: Resultado; nome: string }) {
+function BotaoPdf({ r, nome, comparison }: { r: Resultado; nome: string; comparison: Comparacao | null }) {
   const [arq, setArq] = useState<{ blob: Blob; filename: string } | null>(null);
-  useEffect(() => { gerarPdf(r, nome).then(setArq).catch(console.error); }, [r, nome]);
+  useEffect(() => { gerarPdf(r, nome, comparison, window.location.origin).then(setArq).catch(console.error); }, [r, nome, comparison]);
   return (
-    <button disabled={!arq} onClick={() => arq && deliverFile(arq.blob, arq.filename)}
+    <Button disabled={!arq} onClick={() => arq && deliverFile(arq.blob, arq.filename)}
       className="w-full rounded-full border-2 border-primary bg-card py-3 font-bold text-primary disabled:opacity-50">
       {arq ? "📄 Baixar relatório em PDF" : "Preparando PDF..."}
-    </button>
+    </Button>
   );
 }
 
 function ResultadoView({ r, nome, onNovo }: { r: Resultado; nome: string; onNovo: () => void }) {
+  const [saved, setSaved] = useState<SavedAnalysis | null>(null);
+  const [comparison, setComparison] = useState<Comparacao | null>(null);
   const nums = calcularNumeros(r);
   return (
     <section className="space-y-6">
-      <BotaoPdf r={r} nome={nome} />
+      <BotaoPdf r={r} nome={nome} comparison={comparison} />
       <div className="rounded-3xl bg-hot p-6 text-center text-primary-foreground shadow-card">
         <p className="font-bold uppercase tracking-widest opacity-90">Nota geral</p>
         <p className="font-display text-7xl font-extrabold">{Math.round(r.notaGeral)}<span className="text-3xl opacity-80">/100</span></p>
@@ -224,9 +232,9 @@ function ResultadoView({ r, nome, onNovo }: { r: Resultado; nome: string; onNovo
             <Card key={i}>
               <div className="flex items-center justify-between gap-3">
                 <p className="font-bold">{c.nome}</p>
-                <p className={`font-display text-2xl font-extrabold ${corNota(c.nota, 10)}`}>{c.nota}<span className="text-sm text-muted-foreground">/10</span></p>
+                <p className={`font-display text-2xl font-extrabold ${c.nota == null ? "text-muted-foreground" : corNota(c.nota, 10)}`}>{c.nota == null ? "—" : <>{c.nota}<span className="text-sm text-muted-foreground">/10</span></>}</p>
               </div>
-              <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full bg-hot" style={{ width: `${c.nota * 10}%` }} /></div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full bg-hot" style={{ width: `${(c.nota ?? 0) * 10}%` }} /></div>
               <p className="mt-3">{c.explicacao}</p>
               <p className="mt-2 rounded-xl bg-muted p-3 text-sm italic text-muted-foreground">Ex.: {c.exemplo}</p>
             </Card>
@@ -268,8 +276,10 @@ function ResultadoView({ r, nome, onNovo }: { r: Resultado; nome: string; onNovo
         </div>
       </div>
 
-      <BotaoPdf r={r} nome={nome} />
-      <button onClick={onNovo} className="w-full rounded-full bg-hot py-4 text-lg font-bold text-primary-foreground shadow-card">Analisar outro cardápio</button>
+      <BotaoPdf r={r} nome={nome} comparison={comparison} />
+      <ComparisonPanel r={r} saved={saved} value={comparison} onChange={setComparison} />
+      <SaveAnalysis r={r} nome={nome} saved={saved} onSaved={setSaved} comparison={comparison} />
+      <Button onClick={onNovo} className="w-full rounded-full bg-hot py-4 text-lg font-bold text-primary-foreground shadow-card">Analisar outro cardápio</Button>
     </section>
   );
 }

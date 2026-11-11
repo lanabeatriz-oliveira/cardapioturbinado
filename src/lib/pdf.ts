@@ -1,4 +1,6 @@
 import type { Resultado } from "./analyze.functions";
+import { ABOUT } from "./site";
+import { comparisonRows, formatValue, type Comparacao } from "./comparison";
 import { calcularNumeros } from "./numeros";
 
 // Remove caracteres fora do Latin-1 (emojis), que a fonte padrão do PDF não tem.
@@ -8,7 +10,7 @@ export function slug(s: string) {
   return (s || "hamburgueria").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "hamburgueria";
 }
 
-export async function gerarPdf(r: Resultado, nome: string): Promise<{ blob: Blob; filename: string }> {
+export async function gerarPdf(r: Resultado, nome: string, comparison: Comparacao | null = null, origin = ""): Promise<{ blob: Blob; filename: string }> {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const W = 210, M = 16, CW = W - M * 2, BOTTOM = 280;
@@ -75,7 +77,7 @@ export async function gerarPdf(r: Resultado, nome: string): Promise<{ blob: Blob
   titulo("Critérios");
   r.criterios.forEach((c) => {
     espaco(12);
-    texto(`${c.nome} — ${c.nota}/10`, 11, { bold: true, color: LARANJA });
+    texto(`${c.nome} — ${c.nota == null ? "Não avaliado" : `${c.nota}/10`}`, 11, { bold: true, color: LARANJA });
     texto(c.explicacao, 10);
     if (c.exemplo) texto(`Ex.: ${c.exemplo}`, 9, { color: CINZA, indent: 4 });
     y += 2;
@@ -94,6 +96,22 @@ export async function gerarPdf(r: Resultado, nome: string): Promise<{ blob: Blob
 
   titulo("Combos sugeridos");
   r.combos.forEach((c) => { texto(c.nome, 11, { bold: true }); texto(c.itens.join(" + "), 10, { color: LARANJA }); texto(c.motivo, 10, { color: CINZA }); y += 2; });
+
+  if (comparison) {
+    titulo("Comparação com concorrentes");
+    const names = ["Você", ...comparison.concorrentes.map(c => c.nome)];
+    texto("Preços: o menor valor não significa melhor produto.", 9, { color: CINZA });
+    for (const row of comparisonRows([r, ...comparison.concorrentes.map(c => c.resultado)])) {
+      texto(row.label, 10, { bold: true });
+      row.values.forEach((value, i) => texto(`${names[i]}: ${formatValue(value, row.kind)}`, 9, { indent: 4 }));
+      y += 2;
+    }
+    titulo("O que aprender com os concorrentes");
+    comparison.acoes.forEach((a, i) => { texto(`${i + 1}. ${a.titulo}`, 11, { bold: true }); texto(a.detalhe); y += 2; });
+  }
+  titulo("Sobre o Cardápio Turbo");
+  texto(ABOUT, 9);
+  if (origin) { espaco(10); doc.setFontSize(10); doc.setTextColor(...LARANJA); doc.textWithLink("Sobre o Cardápio Turbo", M, y + 5, { url: `${origin}/sobre` }); y += 10; }
 
   const total = doc.getNumberOfPages();
   for (let p = 1; p <= total; p++) {
