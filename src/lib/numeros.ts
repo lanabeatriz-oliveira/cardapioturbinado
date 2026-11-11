@@ -11,6 +11,7 @@ export function calcularNumeros(r: Resultado) {
     { valor: String(n.totalItens), rotulo: "itens no cardápio" },
     { valor: pct(n.itensComDescricao, n.totalItens), rotulo: "itens com descrição" },
     { valor: pct(n.burgersComPeso, n.totalBurgers), rotulo: "burgers com peso informado" },
+    ...(n.burgersComFoto == null ? [] : [{ valor: pct(n.burgersComFoto, n.totalBurgers), rotulo: "burgers com foto" }]),
     { valor: String(n.combos), rotulo: "combos" },
     { valor: String(n.adicionais), rotulo: "adicionais" },
     { valor: String(n.incoerenciasPreco), rotulo: "incoerências de preço" },
