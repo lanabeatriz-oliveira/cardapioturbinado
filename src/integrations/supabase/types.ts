@@ -149,7 +149,33 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      analysis_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          id: string
+          nome_hamburgueria: string
+          nota_geral: number
+          numeros: Json
+        }[]
+      }
+      is_lana_admin: { Args: never; Returns: boolean }
+      save_competitors: {
+        Args: { p_rows: Json; p_token: string }
+        Returns: undefined
+      }
+      submit_feedback: {
+        Args: {
+          p_antes?: number
+          p_aplicou?: boolean
+          p_comentario?: string
+          p_depois?: number
+          p_momento: string
+          p_sugestoes?: string
+          p_token: string
+          p_utilidade?: number
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
