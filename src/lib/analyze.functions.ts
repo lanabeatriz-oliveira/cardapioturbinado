@@ -3,7 +3,7 @@ import { z } from "zod";
 
 const criterio = z.object({
   nome: z.string(),
-  nota: z.number(),
+  nota: z.number().min(0).max(10).nullable(),
   explicacao: z.string(),
   exemplo: z.string(),
 });
@@ -31,6 +31,7 @@ export const resultadoSchema = z.object({
     itensComDescricao: z.number(),
     totalBurgers: z.number(),
     burgersComPeso: z.number(),
+    burgersComFoto: z.number().nullable(),
     combos: z.number(),
     adicionais: z.number(),
     menorPrecoBurger: z.number().nullable(),
@@ -50,7 +51,7 @@ REGRAS OBRIGATÓRIAS:
 - Se o cardápio claramente não for de hamburgueria, analise mesmo assim e avise isso no resumo.
 Estrutura:
 - notaGeral: 0 a 100.
-- criterios: exatamente 7, nesta ordem e com estes nomes: "Nome claro", "Descrição que dá vontade", "Informação de porção", "Coerência de preço", "Combos e adicionais", "Organização", "Destaques e erros". nota de 0 a 10; explicacao curta; exemplo citando algo real do cardápio.
+- criterios: exatamente 8, nesta ordem e com estes nomes: "Nome claro", "Descrição que dá vontade", "Informação de porção", "Coerência de preço", "Combos e adicionais", "Organização", "Destaques e erros", "Fotos dos produtos". nota de 0 a 10; explicacao curta; exemplo citando algo real do cardápio. Apenas Fotos dos produtos pode ter nota null.
 - topAcoes: exatamente 3, as de maior impacto, em linguagem simples.
 - reescrito: todos os itens do cardápio (até 30), antes e depois de nome e descrição. "observacao" diz o que o dono precisa completar, ou "".
 - combos: 2 ou 3.
@@ -63,6 +64,7 @@ O QUE AVALIAR EM CADA CRITÉRIO:
 - "Combos e adicionais": combo lanche + batata + bebida, adicionais (bacon, cheddar extra, carne extra, ovo), opção de dobrar a carne, sobremesa.
 - "Organização": categorias típicas (Burgers, Combos, Acompanhamentos, Bebidas, Sobremesas, Adicionais) e excesso de lanches parecidos.
 - "Destaques e erros": indicar o carro-chefe/mais pedido, ponto da carne quando aplicável, opções vegetarianas se existirem, erros de português e itens duplicados.`;
+- "Fotos dos produtos": avaliar APENAS fotos/prints realmente visíveis nas imagens enviadas. Foco em FIDELIDADE AO PRODUTO, não detectar IA: itens principais têm fotos? Parecem lanches reais da casa (mesmo fundo/estilo, recheio coerente com descrição) ou genéricas, de banco, repetidas em diferentes itens ou artificiais demais? Avalie luz, enquadramento, lanche aberto mostrando recheio, fundo limpo. O iFood orienta imagens geradas/melhoradas com IA somente quando coerentes com o produto entregue. Nunca afirme origem IA; use "parece" e explique a evidência. Sem fotos visíveis: nota null, explicacao "Não avaliado — envie prints com as fotos", exemplo "". numeros.burgersComFoto: contagem real apenas se a cobertura de fotos dos burgers for visível; null se impossível contar (texto ou link extraído não permitem ver fotos). Não deduza fotos por texto ou URL. Não penalize notaGeral por critério não avaliado.`;
 
 export const analisarCardapio = createServerFn({ method: "POST" })
   .inputValidator(
