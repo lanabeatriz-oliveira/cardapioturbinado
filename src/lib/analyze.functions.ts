@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { CRITERIOS, applyPhotoRules } from "./photo-rules";
+import { aiErrorMessage } from "./analysis-errors";
 
 const criterio = z.object({
   nome: z.enum(CRITERIOS),
@@ -127,13 +128,9 @@ export const analisarCardapio = createServerFn({ method: "POST" })
     try {
       const output = await result.output;
       return applyPhotoRules(output as Resultado, data.imagens);
-    } catch (e: any) {
-      const failure = providerError as { statusCode?: number; cause?: { statusCode?: number } } | undefined;
-      const status = failure?.statusCode ?? failure?.cause?.statusCode ?? e?.statusCode ?? e?.cause?.statusCode;
-      if (status === 429) throw new Error("Muitas análises agora. Tente de novo em instantes.");
-      if (status === 402 || status === 403)
-        throw new Error("Os créditos de IA acabaram. Fale com o responsável pelo app.");
-      console.error(e);
-      throw new Error("Não consegui analisar o cardápio. Tente novamente.");
+    } catch (error) {
+      const original = providerError ?? error;
+      console.error('[analisarCardapio]', original);
+      throw new Error(aiErrorMessage(original, "Não consegui analisar o cardápio. Tente novamente."));
     }
   });

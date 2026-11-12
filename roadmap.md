@@ -1,4 +1,5 @@
 # Cardápio Turbo
+- [x] Comparação investigada: falha original não reproduzida; imagens/payload/erros/progresso corrigidos; principal + texto + print + três ações + dois concorrentes salvos; 21 testes e build OK.
 - [x] Criar conta administrativa via convite seguro; confirmação e senha ficam com Lana.
 - [x] Diagnóstico da conta e da disponibilidade de IA; chamada real respondeu, 14 testes passaram e build OK.
 - [x] Corrigir build; oito critérios, fotos e cobertura.

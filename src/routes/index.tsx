@@ -8,6 +8,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { analisarCardapio, type Resultado } from "@/lib/analyze.functions";
 import { calcularNumeros } from "@/lib/numeros";
 import { gerarPdf, deliverFile } from "@/lib/pdf";
+import { redimensionar } from "@/lib/menu-images";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -32,26 +33,6 @@ const MENSAGENS = [
   "Montando combos...",
   "Reescrevendo as descrições...",
 ];
-
-function redimensionar(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const max = 1600;
-      const s = Math.min(1, max / Math.max(img.width, img.height));
-      const c = document.createElement("canvas");
-      c.width = img.width * s;
-      c.height = img.height * s;
-      const ctx = c.getContext("2d");
-      if (!ctx) { URL.revokeObjectURL(img.src); reject(new Error("Não consegui ler a foto.")); return; }
-      ctx.drawImage(img, 0, 0, c.width, c.height);
-      resolve(c.toDataURL("image/jpeg", 0.85));
-      URL.revokeObjectURL(img.src);
-    };
-    img.onerror = reject;
-    img.src = URL.createObjectURL(file);
-  });
-}
 
 function Index() {
   const [etapa, setEtapa] = useState<Etapa>("inicio");
