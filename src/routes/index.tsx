@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { SaveAnalysis, type SavedAnalysis } from "@/components/save-analysis";
@@ -42,6 +42,7 @@ function Index() {
   const [imagens, setImagens] = useState<string[]>([]);
   const [nome, setNome] = useState("");
   const [link, setLink] = useState("");
+  const [avisoFotos, setAvisoFotos] = useState("");
   const analisar = useServerFn(analisarCardapio);
 
   async function enviar() {
@@ -90,9 +91,12 @@ function Index() {
               onChange={async (e) => {
                 const files = Array.from(e.target.files || []);
                 const novas = await Promise.all(files.map(redimensionar));
-                setImagens((a) => [...a, ...novas].slice(0, 6));
+                setAvisoFotos(imagens.length + novas.length > 10 ? "Você pode enviar até 10 prints. Usei os 10 primeiros." : "");
+                setImagens((a) => [...a, ...novas].slice(0, 10));
                 e.target.value = "";
               }} />
+            <p className="mt-2 text-sm text-muted-foreground">{imagens.length} de 10 prints</p>
+            {avisoFotos && <p role="alert" className="mt-1 text-sm text-warning">{avisoFotos}</p>}
             {imagens.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {imagens.map((src, i) => (
@@ -131,6 +135,8 @@ function Carregando() {
       <div className="h-16 w-16 animate-spin rounded-full border-4 border-accent border-t-primary" />
       <p className="mt-6 text-xl font-bold">{MENSAGENS[i]}</p>
       <p className="mt-2 text-sm text-muted-foreground">Isso pode levar até um minuto.</p>
+      <p className="mt-8 max-w-md text-sm text-muted-foreground">Os critérios desta análise seguem recomendações de plataformas de delivery e estudos sobre o que os clientes valorizam em cardápios online (fotos, descrições, porções e combos).</p>
+      <Link to="/sobre" hash="criterios" target="_blank" className="mt-2 text-sm font-bold text-primary underline">Saiba mais</Link>
     </section>
   );
 }
@@ -258,7 +264,7 @@ function ResultadoView({ r, nome, onNovo }: { r: Resultado; nome: string; onNovo
       </div>
 
       <BotaoPdf r={r} nome={nome} comparison={comparison} />
-      <ComparisonPanel r={r} saved={saved} value={comparison} onChange={setComparison} />
+      <ComparisonPanel r={r} nome={nome} saved={saved} value={comparison} onChange={setComparison} />
       <SaveAnalysis r={r} nome={nome} saved={saved} onSaved={setSaved} comparison={comparison} />
       <Button onClick={onNovo} className="w-full rounded-full bg-hot py-4 text-lg font-bold text-primary-foreground shadow-card">Analisar outro cardápio</Button>
     </section>

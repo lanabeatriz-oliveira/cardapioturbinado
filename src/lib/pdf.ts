@@ -1,6 +1,6 @@
 import type { Resultado } from "./analyze.functions";
 import { ABOUT } from "./site";
-import { comparisonRows, formatValue, type Comparacao } from "./comparison";
+import { comparisonRows, formatValue, leader, type Comparacao } from "./comparison";
 import { calcularNumeros } from "./numeros";
 
 // Remove caracteres fora do Latin-1 (emojis), que a fonte padrão do PDF não tem.
@@ -119,6 +119,59 @@ export async function gerarPdf(r: Resultado, nome: string, comparison: Comparaca
     doc.text(`Cardápio Turbo · página ${p} de ${total}`, W / 2, 291, { align: "center" });
   }
   return { blob: doc.output("blob"), filename: `cardapio-turbo-${slug(nome)}.pdf` };
+}
+
+export async function gerarPdfComparacao(r: Resultado, nome: string, comparison: Comparacao): Promise<{ blob: Blob; filename: string }> {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
+  const W = 297, M = 14, BOTTOM = 195;
+  const LARANJA: [number, number, number] = [234, 88, 12];
+  const CINZA: [number, number, number] = [100, 100, 100];
+  doc.setFillColor(...LARANJA); doc.rect(0, 0, W, 30, "F");
+  doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(20);
+  doc.text("Comparação Cardápio Turbo", M, 14);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(11);
+  doc.text(`${limpo(nome || "Hamburgueria")} · ${new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}`, M, 22);
+  const names = ["Você", ...comparison.concorrentes.map((c) => c.nome)];
+  const rows = comparisonRows([r, ...comparison.concorrentes.map((c) => c.resultado)]);
+  const labelW = 70, colW = (W - M * 2 - labelW) / names.length;
+  let y = 38;
+  const header = () => {
+    doc.setFillColor(255, 237, 224); doc.rect(M, y, W - M * 2, 8, "F");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(30, 30, 30);
+    doc.text("Indicador", M + 2, y + 5.5);
+    names.forEach((n, i) => doc.text(doc.splitTextToSize(limpo(n), colW - 3)[0], M + labelW + i * colW + 2, y + 5.5));
+    y += 8;
+  };
+  header();
+  for (const row of rows) {
+    if (y + 7 > BOTTOM) { doc.addPage(); y = M; header(); }
+    const best = leader(row.values, row.direction);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(30, 30, 30);
+    doc.text(limpo(row.label), M + 2, y + 5);
+    row.values.forEach((v, i) => {
+      const win = v !== null && v === best;
+      doc.setFont("helvetica", win ? "bold" : "normal");
+      doc.setTextColor(...(win ? [22, 140, 70] as [number, number, number] : [30, 30, 30] as [number, number, number]));
+      doc.text(limpo(formatValue(v, row.kind)), M + labelW + i * colW + 2, y + 5);
+    });
+    doc.setDrawColor(230, 230, 230); doc.line(M, y + 7, W - M, y + 7);
+    y += 7;
+  }
+  y += 4; doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...CINZA);
+  doc.text("Verde indica quem lidera a linha. Nos preços, o menor valor não é recomendação de reduzir preço.", M, y); y += 8;
+  const write = (t: string, size: number, bold = false, color: [number, number, number] = [30, 30, 30]) => {
+    doc.setFont("helvetica", bold ? "bold" : "normal"); doc.setFontSize(size); doc.setTextColor(...color);
+    for (const l of doc.splitTextToSize(limpo(t), W - M * 2)) { if (y + size * 0.45 > BOTTOM) { doc.addPage(); y = M; } doc.text(l, M, y + size * 0.36); y += size * 0.45; }
+  };
+  if (y + 20 > BOTTOM) { doc.addPage(); y = M; }
+  doc.setFillColor(...LARANJA); doc.rect(M, y, 3, 7, "F"); doc.setFont("helvetica", "bold"); doc.setFontSize(14); doc.setTextColor(30, 30, 30);
+  doc.text("O que aprender com os concorrentes", M + 6, y + 5.5); y += 11;
+  if (!comparison.acoes.length) write("Ações ainda não preparadas.", 10, false, CINZA);
+  comparison.acoes.forEach((a, i) => { write(`${i + 1}. ${a.titulo}`, 11, true); write(a.detalhe, 10, false, CINZA); y += 2; });
+  const total = doc.getNumberOfPages();
+  for (let p = 1; p <= total; p++) { doc.setPage(p); doc.setFontSize(8); doc.setTextColor(...CINZA); doc.setFont("helvetica", "normal"); doc.text(`Cardápio Turbo · página ${p} de ${total}`, W / 2, 205, { align: "center" }); }
+  return { blob: doc.output("blob"), filename: `cardapio-turbo-comparacao-${slug(nome)}.pdf` };
 }
 
 export function downloadBlob(blob: Blob, filename: string) {

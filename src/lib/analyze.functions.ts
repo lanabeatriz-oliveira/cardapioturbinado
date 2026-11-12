@@ -75,7 +75,7 @@ export const analisarCardapio = createServerFn({ method: "POST" })
         throw new Error("Envie um link, uma foto ou cole o texto do cardápio.");
       if (input.link?.trim() && !/^https?:\/\/[^\s]+$/i.test(input.link.trim()))
         throw new Error("Esse link não parece válido. Ele deve começar com https://");
-      if (input.imagens.length > 6) throw new Error("Envie no máximo 6 fotos.");
+      if (input.imagens.length > 10) throw new Error("Envie no máximo 10 fotos.");
       return input;
     },
   )
@@ -95,7 +95,7 @@ export const analisarCardapio = createServerFn({ method: "POST" })
       const lido = await lerLink(data.link.trim());
       if (pareceCardapio(lido)) doLink = lido;
       else if (!data.texto?.trim() && !data.imagens.length)
-        throw new Error("Não consegui ler esse link. Tente colar o texto do cardápio ou enviar prints (até 6).");
+        throw new Error("Não consegui ler esse link. Tente colar o texto do cardápio ou enviar prints (até 10).");
     }
     const intro = `Restaurante: ${data.nome || "(não informado)"}\n\nCardápio em texto:\n${data.texto || "(veja as fotos ou o link)"}${doLink ? `\n\nConteúdo extraído do link do cardápio (pode ter textos do site misturados; use só os itens do cardápio):\n${doLink}` : ""}`;
     let providerError: unknown;

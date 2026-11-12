@@ -18,3 +18,5 @@ describe('Regras solicitadas',()=>{
  it('compara cobertura e preços reais',()=>{const rows=comparisonRows([fixture,{...fixture,numeros:{...fixture.numeros,burgersComFoto:1}}]);expect(rows.find(r=>r.label==='% com foto')?.values).toEqual([null,50]);expect(rows.find(r=>r.label==='Preço médio')?.values).toEqual([29.5,29.5]);});
  it('gera PDF real com comparação',async()=>{const pdf=await gerarPdf(fixture,'Casa Teste',{concorrentes:[{nome:'Concorrente',resultado:fixture}],acoes:fixture.topAcoes},'https://app.example');expect(pdf.filename).toBe('cardapio-turbo-casa-teste.pdf');expect(pdf.blob.type).toBe('application/pdf');expect(pdf.blob.size).toBeGreaterThan(5000);});
 });
+import {gerarPdfComparacao} from '@/lib/pdf';
+describe('PDF da comparação',()=>{it('gera arquivo separado só da comparação',async()=>{const pdf=await gerarPdfComparacao(fixture,'Casa Teste',{concorrentes:[{nome:'Rival',resultado:fixture}],acoes:fixture.topAcoes});expect(pdf.filename).toBe('cardapio-turbo-comparacao-casa-teste.pdf');expect(pdf.blob.type).toBe('application/pdf');});});

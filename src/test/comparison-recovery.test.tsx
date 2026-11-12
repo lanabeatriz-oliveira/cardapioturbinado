@@ -9,6 +9,7 @@ const mocks=vi.hoisted(()=>({analyze:vi.fn(),learn:vi.fn(),persist:vi.fn()}));
 vi.mock('@tanstack/react-start',()=>({createServerFn:()=>({inputValidator:()=>({handler:()=>({})})}),useServerFn:(fn:unknown)=>fn}));
 vi.mock('@/lib/analyze.functions',async()=>{const {z}=await import('zod');return {analisarCardapio:mocks.analyze,resultadoSchema:z.object({notaGeral:z.number(),resumo:z.string(),criterios:z.array(z.any()),numeros:z.any(),topAcoes:z.array(z.any())})};});
 vi.mock('@/lib/compare.functions',()=>({aprenderConcorrentes:mocks.learn}));
+vi.mock('@/lib/link.functions',()=>({lerLinkCardapio:async()=>({ok:false,texto:''})}));
 vi.mock('@/components/save-analysis',()=>({persistCompetitors:mocks.persist}));
 import { ComparisonPanel } from '@/components/comparison-panel';
 const result:Resultado={notaGeral:72,resumo:'Teste',criterios:CRITERIOS.map(nome=>({nome,nota:7,explicacao:'Teste',exemplo:'X-Burger'})),topAcoes:[],reescrito:[{nomeAntes:'X-Burger',descricaoAntes:'Carne 150g',nomeDepois:'NOME NOVO',descricaoDepois:'REESCRITA',preco:'25',observacao:'OBS'}],combos:[],numeros:{totalItens:1,itensComDescricao:1,totalBurgers:1,burgersComPeso:1,burgersComFoto:null,combos:0,adicionais:0,menorPrecoBurger:25,maiorPrecoBurger:25,precoMedioBurger:25,incoerenciasPreco:0}};
@@ -32,4 +33,10 @@ describe('Recuperação da comparação',()=>{
   mocks.analyze.mockResolvedValue(result);mocks.learn.mockRejectedValue(new Error('Muitas análises agora.'));mocks.persist.mockResolvedValue({ok:true});const changed=vi.fn();
   render(<ComparisonPanel r={result} saved={{id:'id',token:'token'}} value={null} onChange={changed}/>);fireEvent.click(screen.getByRole('button',{name:'Comparar com até 3 concorrentes'}));fireEvent.change(screen.getByLabelText('Nome concorrente 1'),{target:{value:'A'}});fireEvent.change(screen.getByLabelText('Texto concorrente 1'),{target:{value:'Burger'}});fireEvent.click(screen.getByRole('button',{name:'Analisar concorrentes'}));await waitFor(()=>expect(mocks.persist).toHaveBeenCalledTimes(1));expect(changed.mock.calls[0]?.[0].concorrentes).toHaveLength(1);expect(screen.getByRole('alert').textContent).toContain('Muitas análises agora.');
  });
-});
+});describe('Links de concorrentes',()=>{it('avisa por concorrente quando o link não pode ser lido',async()=>{
+  render(<ComparisonPanel r={result} saved={null} value={null} onChange={vi.fn()}/>);
+  fireEvent.click(screen.getByRole('button',{name:'Comparar com até 3 concorrentes'}));
+  fireEvent.change(screen.getByLabelText('Nome concorrente 1'),{target:{value:'Brendi Burger'}});fireEvent.change(screen.getByLabelText('Link concorrente 1'),{target:{value:'https://menu.brendi.com.br/x'}});
+  fireEvent.click(screen.getByRole('button',{name:'Analisar concorrentes'}));
+  await waitFor(()=>expect(screen.getByRole('alert').textContent).toContain('Não consegui ler o link de Brendi Burger. Envie prints do cardápio.'));expect(mocks.analyze).not.toHaveBeenCalled();
+});});
