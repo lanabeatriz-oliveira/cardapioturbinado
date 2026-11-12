@@ -1,8 +1,10 @@
 # Cardápio Turbo
-- [ ] Corrigir erros e validar análise por texto/link/PDF.
-- [ ] Fotos: oitavo critério e cobertura quando visível.
-- [ ] Sobre, autoria e LinkedIn pendente.
-- [ ] Salvar análise, pesquisas e retorno privado por token.
-- [ ] Administração com conta exclusiva e acompanhamento WhatsApp.
-- [ ] Comparação com até três concorrentes e PDF.
-- [ ] Testes, segurança e verificação final.
+- [x] Corrigir build; oito critérios, fotos e cobertura.
+- [x] Sobre, autoria, placeholder de LinkedIn e link no PDF.
+- [x] Salvamento, consentimento, pesquisa imediata e retorno por token.
+- [x] Administração, filtros, resumo, dias e WhatsApp; acesso sem sessão redireciona.
+- [x] Comparação até três concorrentes, destaque, ações e PDF.
+- [x] 11 testes; retorno real salvo; consulta pública não revela linhas; segurança sem alertas; mobile Sobre verificado.
+- [ ] Testar análise real principal + dois concorrentes e fotos: aguarda créditos de IA (402).
+- [ ] Validar administração autenticada: conta de Lana não existe; Supabase externo não permite sessão de teste gerenciada.
+- [ ] LinkedIn real: aguarda endereço de Lana.

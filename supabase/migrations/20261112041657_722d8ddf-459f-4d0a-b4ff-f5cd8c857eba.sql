@@ -1,0 +1,1 @@
+ALTER POLICY visitor_save_analysis ON public.analises WITH CHECK (nota_geral BETWEEN 0 AND 100 AND dias_followup=7 AND followup_enviado=false AND (criado_em AT TIME ZONE 'America/Sao_Paulo')::date=(now() AT TIME ZONE 'America/Sao_Paulo')::date AND (consentimento=true OR (nome_dono IS NULL AND whatsapp IS NULL)));
