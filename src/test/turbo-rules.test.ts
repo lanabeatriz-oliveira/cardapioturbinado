@@ -1,0 +1,20 @@
+import {describe,it,expect} from 'vitest';
+import {applyPhotoRules,CRITERIOS} from '@/lib/photo-rules';
+import {contactFields,followupDate,whatsappLink} from '@/lib/followup';
+import {leader,comparisonRows} from '@/lib/comparison';
+import {calcularNumeros} from '@/lib/numeros';
+import {gerarPdf} from '@/lib/pdf';
+import type {Resultado} from '@/lib/analyze.functions';
+export const fixture:Resultado={notaGeral:72,resumo:'Cardápio de hamburgueria de teste.',criterios:CRITERIOS.map(nome=>({nome,nota:nome==='Fotos dos produtos'?null:7,explicacao:nome==='Fotos dos produtos'?'Não avaliado — envie prints com as fotos':'Descrição do X-Salada.',exemplo:'X-Salada'})),topAcoes:[{titulo:'Informar carro-chefe',detalhe:'Destaque o X-Salada.'},{titulo:'Organizar categorias',detalhe:'Separe bebidas.'},{titulo:'Informar porção',detalhe:'Informe a porção da batata.'}],reescrito:[{nomeAntes:'X-Salada',descricaoAntes:'Pão, carne, queijo',nomeDepois:'X-Salada',descricaoDepois:'Pão, carne, queijo',preco:'R$ 25',observacao:''}],combos:[{nome:'Combo Salada',itens:['X-Salada','Batata','Coca-Cola'],motivo:'Itens existentes.'}],numeros:{totalItens:5,itensComDescricao:2,totalBurgers:2,burgersComPeso:1,burgersComFoto:null,combos:0,adicionais:1,menorPrecoBurger:25,maiorPrecoBurger:34,precoMedioBurger:29.5,incoerenciasPreco:0}};
+describe('Regras solicitadas',()=>{
+ it('mantém exatamente oito critérios com fotos em oitavo',()=>expect(CRITERIOS).toHaveLength(8));
+ it('sem fotos, marca nota e cobertura null',()=>{const r=applyPhotoRules({...fixture,criterios:fixture.criterios.map(c=>({...c,nota:8})),numeros:{...fixture.numeros,burgersComFoto:2}},[]);expect(r.criterios[7]?.nota).toBeNull();expect(r.numeros.burgersComFoto).toBeNull();});
+ it('calcula porcentagem de burgers com foto quando possível',()=>{const n=calcularNumeros({...fixture,numeros:{...fixture.numeros,burgersComFoto:1}});expect(n.find(x=>x.rotulo==='burgers com foto')?.valor).toBe('50%');});
+ it('não guarda nome ou WhatsApp sem consentimento',()=>expect(contactFields(false,'Pessoa','27999999999')).toEqual({nome_dono:null,whatsapp:null}));
+ it('guarda contato somente quando consentido',()=>expect(contactFields(true,' Pessoa ','(27) 99999-9999')).toEqual({nome_dono:'Pessoa',whatsapp:'27999999999'}));
+ it('agenda o retorno após sete dias',()=>expect(followupDate('2026-11-11T03:41:00Z',7)).toBe('2026-11-18'));
+ it('gera WhatsApp com nome, hamburgueria, dias e link',()=>{const url=whatsappLink({nome_dono:'Dona',nome_hamburgueria:'Casa',whatsapp:'27999999999',criado_em:'2026-11-11T03:41:00Z',token:'TOKEN'},'https://app.example',new Date('2026-11-18T03:41:00Z'));expect(url).toContain('wa.me/5527999999999');expect(decodeURIComponent(url??'')).toContain('Já faz 7 dias da análise do cardápio da Casa');expect(decodeURIComponent(url??'')).toContain('https://app.example/retorno/TOKEN');});
+ it('ignora notas null ao destacar líderes',()=>expect(leader([null,7,9])).toBe(9));
+ it('compara cobertura e preços reais',()=>{const rows=comparisonRows([fixture,{...fixture,numeros:{...fixture.numeros,burgersComFoto:1}}]);expect(rows.find(r=>r.label==='% com foto')?.values).toEqual([null,50]);expect(rows.find(r=>r.label==='Preço médio')?.values).toEqual([29.5,29.5]);});
+ it('gera PDF real com comparação',async()=>{const pdf=await gerarPdf(fixture,'Casa Teste',{concorrentes:[{nome:'Concorrente',resultado:fixture}],acoes:fixture.topAcoes},'https://app.example');expect(pdf.filename).toBe('cardapio-turbo-casa-teste.pdf');expect(pdf.blob.type).toBe('application/pdf');expect(pdf.blob.size).toBeGreaterThan(5000);});
+});

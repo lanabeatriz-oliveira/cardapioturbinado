@@ -1,10 +1,12 @@
 import {useState} from 'react';
-import {supabase} from '@/integrations/supabase/client';
+import {useServerFn} from '@tanstack/react-start';
+import {sendFeedback} from '@/lib/research.functions';
 import {Button} from '@/components/ui/button';
 export function FeedbackForm({token,momento}:{token:string;momento:'imediato'|'retorno'}){
+ const send=useServerFn(sendFeedback);
  const [utility,setUtility]=useState(5),[suggestion,setSuggestion]=useState(''),[applied,setApplied]=useState(''),[before,setBefore]=useState(''),[after,setAfter]=useState(''),[comment,setComment]=useState(''),[busy,setBusy]=useState(false),[done,setDone]=useState(false),[error,setError]=useState('');
  if(done)return <p role="status" className="text-success font-bold">Obrigada por responder!</p>;
- return <form className="space-y-3" onSubmit={async(e)=>{e.preventDefault();setBusy(true);setError('');const {error}=await supabase.rpc('submit_feedback',{p_token:token,p_momento:momento,p_sugestoes:suggestion,...(momento==='imediato'?{p_utilidade:utility}:{p_aplicou:applied==='sim',...(before!==''?{p_antes:Number(before)}:{}),...(after!==''?{p_depois:Number(after)}:{}),p_comentario:comment})});setBusy(false);if(error)setError(error.message);else setDone(true);}}>
+ return <form className="space-y-3" onSubmit={async(e)=>{e.preventDefault();setBusy(true);setError('');try { await send({data:{p_token:token,p_momento:momento,p_sugestoes:suggestion,...(momento==='imediato'?{p_utilidade:utility}:{p_aplicou:applied==='sim',...(before!==''?{p_antes:Number(before)}:{}),...(after!==''?{p_depois:Number(after)}:{}),p_comentario:comment})}});setDone(true);}catch(e){setError(e instanceof Error?e.message:'Erro ao enviar.');}finally{setBusy(false);}}}>
  <h2 className="text-xl font-bold">{momento==='imediato'?'O que achou da análise?':'Como foi depois da análise?'}</h2>
  {momento==='imediato'?<label className="block">Utilidade (1 a 5)<select aria-label="Utilidade" className="w-full border rounded-lg bg-background p-3" value={utility} onChange={e=>setUtility(Number(e.target.value))}>{[1,2,3,4,5].map(v=><option key={v} value={v}>{v}</option>)}</select></label>:<label className="block">Aplicou mudanças?<select required aria-label="Aplicou mudanças?" className="w-full border rounded-lg bg-background p-3" value={applied} onChange={e=>setApplied(e.target.value)}><option value="">Selecione</option><option value="sim">Sim</option><option value="nao">Não</option></select></label>}
  <label className="block">{momento==='imediato'?'Qual sugestão vai aplicar?':'Quais mudanças?'}<textarea maxLength={3000} className="w-full border rounded-lg bg-background p-3" value={suggestion} onChange={e=>setSuggestion(e.target.value)}/></label>

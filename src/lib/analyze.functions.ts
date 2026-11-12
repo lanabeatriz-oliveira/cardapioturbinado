@@ -1,17 +1,18 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { CRITERIOS, applyPhotoRules } from "./photo-rules";
 
 const criterio = z.object({
-  nome: z.string(),
+  nome: z.enum(CRITERIOS),
   nota: z.number().min(0).max(10).nullable(),
   explicacao: z.string(),
   exemplo: z.string(),
 });
 
 export const resultadoSchema = z.object({
-  notaGeral: z.number(),
+  notaGeral: z.number().min(0).max(100),
   resumo: z.string(),
-  criterios: z.array(criterio),
+  criterios: z.array(criterio).length(8),
   topAcoes: z.array(z.object({ titulo: z.string(), detalhe: z.string() })),
   reescrito: z.array(
     z.object({
@@ -96,7 +97,9 @@ export const analisarCardapio = createServerFn({ method: "POST" })
         throw new Error("Não consegui ler esse link. Tente colar o texto do cardápio ou enviar prints (até 6).");
     }
     const intro = `Restaurante: ${data.nome || "(não informado)"}\n\nCardápio em texto:\n${data.texto || "(veja as fotos ou o link)"}${doLink ? `\n\nConteúdo extraído do link do cardápio (pode ter textos do site misturados; use só os itens do cardápio):\n${doLink}` : ""}`;
+    let providerError: unknown;
     const result = streamText({
+      onError: ({ error }) => { providerError = error; },
       model: openai.responses("openai/gpt-6-astra"),
       system: SYSTEM,
       maxRetries: 0,
@@ -120,10 +123,13 @@ export const analisarCardapio = createServerFn({ method: "POST" })
         },
       },
     });
+    // Streaming errors are otherwise wrapped as NoOutputGeneratedError.
     try {
-      return (await result.output) as Resultado;
+      const output = await result.output;
+      return applyPhotoRules(output as Resultado, data.imagens);
     } catch (e: any) {
-      const status = e?.statusCode ?? e?.cause?.statusCode;
+      const failure = providerError as { statusCode?: number; cause?: { statusCode?: number } } | undefined;
+      const status = failure?.statusCode ?? failure?.cause?.statusCode ?? e?.statusCode ?? e?.cause?.statusCode;
       if (status === 429) throw new Error("Muitas análises agora. Tente de novo em instantes.");
       if (status === 402 || status === 403)
         throw new Error("Os créditos de IA acabaram. Fale com o responsável pelo app.");

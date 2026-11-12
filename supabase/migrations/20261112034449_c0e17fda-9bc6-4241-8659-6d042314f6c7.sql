@@ -1,0 +1,11 @@
+CREATE SCHEMA IF NOT EXISTS private;
+REVOKE ALL ON SCHEMA private FROM PUBLIC;
+GRANT USAGE ON SCHEMA private TO authenticated;
+CREATE OR REPLACE FUNCTION private.is_lana_admin() RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS $$ SELECT EXISTS (SELECT 1 FROM auth.users WHERE id=auth.uid() AND lower(email)='lanabeatriz929@gmail.com' AND email_confirmed_at IS NOT NULL); $$;
+REVOKE ALL ON FUNCTION private.is_lana_admin() FROM PUBLIC; GRANT EXECUTE ON FUNCTION private.is_lana_admin() TO authenticated;
+CREATE OR REPLACE FUNCTION public.is_lana_admin() RETURNS boolean LANGUAGE sql STABLE SECURITY INVOKER SET search_path=public AS $$ SELECT private.is_lana_admin(); $$;
+REVOKE ALL ON FUNCTION public.is_lana_admin() FROM PUBLIC,anon; GRANT EXECUTE ON FUNCTION public.is_lana_admin() TO authenticated;
+REVOKE ALL ON FUNCTION public.analysis_by_token(uuid) FROM anon,authenticated;
+REVOKE ALL ON FUNCTION public.submit_feedback(uuid,text,integer,text,boolean,integer,integer,text) FROM anon,authenticated;
+REVOKE ALL ON FUNCTION public.save_competitors(uuid,jsonb) FROM anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.analysis_by_token(uuid),public.submit_feedback(uuid,text,integer,text,boolean,integer,integer,text),public.save_competitors(uuid,jsonb) TO service_role;
