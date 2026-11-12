@@ -138,7 +138,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
-      <footer className="mx-auto flex max-w-2xl justify-center gap-6 px-4 py-8 text-sm text-muted-foreground"><Link to="/sobre">Sobre</Link><Link to="/admin">Área da Lana</Link></footer>
+      <footer className="mx-auto flex max-w-2xl flex-wrap justify-center gap-6 px-4 py-8 text-sm text-muted-foreground"><Link to="/sobre">Sobre</Link><Link to="/admin">Área da Lana</Link><Link to="/diagnostico">Diagnóstico</Link></footer>
     </QueryClientProvider>
   );
 }

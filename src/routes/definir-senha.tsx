@@ -1,0 +1,11 @@
+import {createFileRoute, Link, useNavigate} from '@tanstack/react-router';
+import {useState} from 'react';
+import {supabase} from '@/integrations/supabase/client';
+import {Button} from '@/components/ui/button';
+import {pageHead} from '@/lib/site';
+export const Route = createFileRoute('/definir-senha')({head: () => pageHead('Definir senha', 'Defina com segurança sua senha administrativa do Cardápio Turbo.'), component: SetPassword});
+function SetPassword() {
+  const navigate = useNavigate();
+  const [password, setPassword] = useState(''), [confirmation, setConfirmation] = useState(''), [error, setError] = useState(''), [busy, setBusy] = useState(false);
+  return <main className="mx-auto max-w-md px-4 py-16 space-y-5"><h1 className="text-3xl font-bold">Definir sua senha</h1><form className="space-y-4" onSubmit={async e => {e.preventDefault(); setError(''); if (password !== confirmation) {setError('As senhas precisam ser iguais.'); return;} setBusy(true); try {const {data: allowed, error: permission} = await supabase.rpc('is_lana_admin'); if (permission || !allowed) {setError('Abra o link do convite enviado ao seu e-mail para definir sua senha.'); return;} const {error: failure} = await supabase.auth.updateUser({password}); if (failure) {setError('Não consegui salvar a senha. Use pelo menos 8 caracteres ou solicite um novo convite.'); return;} await navigate({to: '/diagnostico'});} finally {setBusy(false);}}}><label className="block">Nova senha<input required minLength={8} autoComplete="new-password" type="password" value={password} onChange={e=>setPassword(e.target.value)} className="mt-2 w-full rounded-lg border bg-card p-3"/></label><label className="block">Confirmar senha<input required minLength={8} autoComplete="new-password" type="password" value={confirmation} onChange={e=>setConfirmation(e.target.value)} className="mt-2 w-full rounded-lg border bg-card p-3"/></label>{error && <p role="alert" className="text-destructive">{error}</p>}<Button type="submit" disabled={busy}>{busy ? 'Salvando...' : 'Salvar senha'}</Button></form><Link to="/auth" className="text-primary">Voltar ao acesso</Link></main>;
+}

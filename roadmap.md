@@ -1,10 +1,11 @@
 # Cardápio Turbo
+- [x] Criar conta administrativa via convite seguro; confirmação e senha ficam com Lana.
+- [x] Diagnóstico da conta e da disponibilidade de IA; chamada real respondeu, 14 testes passaram e build OK.
 - [x] Corrigir build; oito critérios, fotos e cobertura.
 - [x] Sobre, autoria, placeholder de LinkedIn e link no PDF.
 - [x] Salvamento, consentimento, pesquisa imediata e retorno por token.
 - [x] Administração, filtros, resumo, dias e WhatsApp; acesso sem sessão redireciona.
 - [x] Comparação até três concorrentes, destaque, ações e PDF.
 - [x] 11 testes; retorno real salvo; consulta pública não revela linhas; segurança sem alertas; mobile Sobre verificado.
-- [ ] Testar análise real principal + dois concorrentes e fotos: aguarda créditos de IA (402).
-- [ ] Validar administração autenticada: conta de Lana não existe; Supabase externo não permite sessão de teste gerenciada.
+- [ ] Validar administração autenticada: aguarda Lana confirmar o convite e definir sua senha; Supabase externo não permite sessão de teste gerenciada.
 - [ ] LinkedIn real: aguarda endereço de Lana.

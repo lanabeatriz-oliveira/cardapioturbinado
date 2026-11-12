@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as DefinirSenhaRouteImport } from './routes/definir-senha'
+import { Route as DiagnosticoRouteImport } from './routes/diagnostico'
 import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as RetornoTokenRouteImport } from './routes/retorno.$token'
@@ -28,6 +30,16 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DefinirSenhaRoute = DefinirSenhaRouteImport.update({
+  id: '/definir-senha',
+  path: '/definir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiagnosticoRoute = DiagnosticoRouteImport.update({
+  id: '/diagnostico',
+  path: '/diagnostico',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SobreRoute = SobreRouteImport.update({
@@ -49,6 +61,8 @@ const RetornoTokenRoute = RetornoTokenRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/definir-senha': typeof DefinirSenhaRoute
+  '/diagnostico': typeof DiagnosticoRoute
   '/sobre': typeof SobreRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/retorno/$token': typeof RetornoTokenRoute
@@ -56,6 +70,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/definir-senha': typeof DefinirSenhaRoute
+  '/diagnostico': typeof DiagnosticoRoute
   '/sobre': typeof SobreRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/retorno/$token': typeof RetornoTokenRoute
@@ -65,20 +81,38 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/definir-senha': typeof DefinirSenhaRoute
+  '/diagnostico': typeof DiagnosticoRoute
   '/sobre': typeof SobreRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/retorno/$token': typeof RetornoTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/sobre' | '/admin' | '/retorno/$token'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/definir-senha'
+    | '/diagnostico'
+    | '/sobre'
+    | '/admin'
+    | '/retorno/$token'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/sobre' | '/admin' | '/retorno/$token'
+  to:
+    | '/'
+    | '/auth'
+    | '/definir-senha'
+    | '/diagnostico'
+    | '/sobre'
+    | '/admin'
+    | '/retorno/$token'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/definir-senha'
+    | '/diagnostico'
     | '/sobre'
     | '/_authenticated/admin'
     | '/retorno/$token'
@@ -88,6 +122,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  DefinirSenhaRoute: typeof DefinirSenhaRoute
+  DiagnosticoRoute: typeof DiagnosticoRoute
   SobreRoute: typeof SobreRoute
   RetornoTokenRoute: typeof RetornoTokenRoute
 }
@@ -113,6 +149,20 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/definir-senha': {
+      id: '/definir-senha'
+      path: '/definir-senha'
+      fullPath: '/definir-senha'
+      preLoaderRoute: typeof DefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/diagnostico': {
+      id: '/diagnostico'
+      path: '/diagnostico'
+      fullPath: '/diagnostico'
+      preLoaderRoute: typeof DiagnosticoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sobre': {
@@ -154,6 +204,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  DefinirSenhaRoute: DefinirSenhaRoute,
+  DiagnosticoRoute: DiagnosticoRoute,
   SobreRoute: SobreRoute,
   RetornoTokenRoute: RetornoTokenRoute,
 }
