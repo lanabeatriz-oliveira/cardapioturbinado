@@ -6,6 +6,7 @@ export function aiErrorStatus(error: unknown): number | undefined {
 
 export function aiErrorMessage(error: unknown, fallback: string): string {
   const status = aiErrorStatus(error);
+  if (isAIQuotaError(error)) return 'Os créditos de IA acabaram. Fale com o responsável pelo app.';
   if (status === 429) return 'Muitas análises agora. Tente de novo em instantes.';
   // The gateway's safe message distinguishes credits, policy and provider denials.
   if (status === 402 || status === 403) {
@@ -19,4 +20,18 @@ export function aiErrorMessage(error: unknown, fallback: string): string {
     return status === 402 ? 'Os créditos de IA acabaram. Fale com o responsável pelo app.' : 'O acesso à IA foi bloqueado. Fale com o responsável pelo app.';
   }
   return fallback;
+}
+
+// Gemini reports both temporary throttling and daily quota exhaustion as 429.
+// Inspect structured quota violations without exposing the provider response.
+export function isAIQuotaError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const e = error as { responseBody?: string; cause?: unknown };
+  try {
+    const body = JSON.parse(e.responseBody ?? '{}');
+    const details = body.error?.details;
+    if (Array.isArray(details) && details.some((detail: { violations?: Array<{quotaId?: string}> }) =>
+      detail.violations?.some(v => /perday|daily|tokensperday/i.test(v.quotaId ?? '')))) return true;
+  } catch { /* Unstructured responses are not surfaced. */ }
+  return isAIQuotaError(e.cause);
 }

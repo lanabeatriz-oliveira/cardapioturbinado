@@ -9,6 +9,7 @@ import { analisarCardapio, type Resultado } from "@/lib/analyze.functions";
 import { calcularNumeros } from "@/lib/numeros";
 import { gerarPdf, deliverFile } from "@/lib/pdf";
 import { redimensionar } from "@/lib/menu-images";
+import { DOORDASH_DATA } from '@/lib/site';
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -70,7 +71,7 @@ function Index() {
       {etapa === "inicio" && (
         <section className="flex min-h-[85vh] flex-col items-center justify-center text-center">
           <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-hot text-3xl shadow-card">🔥</div>
-          <h1 className="text-5xl font-extrabold tracking-tight">Cardápio <span className="text-primary">Turbo</span></h1>
+          <div className="flex flex-wrap items-center justify-center gap-2"><h1 className="text-5xl font-extrabold tracking-tight">Cardápio <span className="text-primary">Turbo</span></h1><span className="rounded-md border bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">Piloto</span></div>
           <p className="mt-4 max-w-sm text-lg text-muted-foreground">Descubra o que está fazendo sua hamburgueria perder pedidos</p>
           <Button onClick={() => setEtapa("entrada")} className="mt-8 rounded-full bg-hot px-8 py-4 text-lg font-bold text-primary-foreground shadow-card transition hover:scale-105">
             Analisar meu cardápio
@@ -136,6 +137,7 @@ function Carregando() {
       <p className="mt-6 text-xl font-bold">{MENSAGENS[i]}</p>
       <p className="mt-2 text-sm text-muted-foreground">Isso pode levar até um minuto.</p>
       <p className="mt-8 max-w-md text-sm text-muted-foreground">Os critérios desta análise seguem recomendações de plataformas de delivery e estudos sobre o que os clientes valorizam em cardápios online (fotos, descrições, porções e combos).</p>
+      <p className="mt-3 max-w-md text-sm text-muted-foreground">{DOORDASH_DATA}</p>
       <Link to="/sobre" hash="criterios" target="_blank" className="mt-2 text-sm font-bold text-primary underline">Saiba mais</Link>
     </section>
   );

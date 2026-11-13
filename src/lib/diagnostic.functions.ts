@@ -1,6 +1,7 @@
 import {createServerFn} from '@tanstack/react-start';
 import {requireSupabaseAuth} from '@/integrations/supabase/auth-middleware';
 import {aiFailure} from './diagnostic-rules';
+import {aiErrorStatus, isAIQuotaError} from './analysis-errors';
 
 export const checkAccount = createServerFn({method: 'POST'}).middleware([requireSupabaseAuth]).handler(async ({context}) => {
   const {data: allowed, error} = await context.supabase.rpc('is_lana_admin');
@@ -10,21 +11,18 @@ export const checkAccount = createServerFn({method: 'POST'}).middleware([require
 export const checkAI = createServerFn({method: 'POST'}).middleware([requireSupabaseAuth]).handler(async ({context}) => {
   const {data: allowed, error} = await context.supabase.rpc('is_lana_admin');
   if (error || !allowed) throw new Error('Acesso exclusivo da Lana.');
-  const key = process.env['LOVABLE_API_KEY'];
+  const key = process.env['GEMINI_API_KEY'];
   if (!key) return {status: 'error' as const, message: 'A IA ainda não está configurada.'};
-  const {createResponsesCall} = await import('./diagnostic-responses.server');
+  const {createGeminiModel, geminiOptions} = await import('./gemini.server');
+  const {streamText} = await import('ai');
+  let providerError: unknown;
   try {
-    const {result} = createResponsesCall(new Request('https://cardapioturbinado.lovable.app/diagnostico'), {baseURL: 'https://ai.gateway.lovable.dev/v1', apiKey: key, model: 'openai/gpt-6-astra'}, [{role: 'user', content: 'Responda apenas OK.'}]);
+    const result = streamText({model: createGeminiModel(), maxRetries: 0, providerOptions: geminiOptions, onError: ({error}) => {providerError = error;}, prompt: 'Responda apenas OK.'});
     const text = await result.text;
     if (!text.trim()) return {status: 'error' as const, message: 'A IA não retornou uma resposta. Verificação encerrada.'};
-    return {status: 'ok' as const, message: 'A IA respondeu e há créditos para esta verificação. O saldo exato não é informado; análises e comparações podem consumir mais.'};
+    return {status: 'ok' as const, message: 'O Gemini respondeu a esta verificação. Isso não garante cota para outras análises; confira seus limites no Google AI Studio.'};
   } catch (error) {
-    const {APICallError} = await import('ai');
-    if (APICallError.isInstance(error)) {
-      let message: string | undefined;
-      try { const body = JSON.parse(error.responseBody || '{}'); const candidate = body.message ?? body.error?.message; if (typeof candidate === 'string') message = candidate.replaceAll(key, '[credencial protegida]'); } catch { /* Do not expose raw responses. */ }
-      return aiFailure(error.statusCode, message);
-    }
-    return aiFailure(undefined);
+    const original = providerError ?? error;
+    return aiFailure(isAIQuotaError(original) ? 402 : aiErrorStatus(original));
   }
 });

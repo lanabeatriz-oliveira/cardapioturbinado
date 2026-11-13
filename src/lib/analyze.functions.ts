@@ -80,15 +80,8 @@ export const analisarCardapio = createServerFn({ method: "POST" })
     },
   )
   .handler(async ({ data }) => {
-    const { createOpenAI } = await import("@ai-sdk/openai");
+    const { createGeminiModel, geminiOptions } = await import('./gemini.server');
     const { streamText, Output } = await import("ai");
-    const apiKey = process.env["LOVABLE_API_KEY"];
-    if (!apiKey) throw new Error("IA não configurada.");
-    const openai = createOpenAI({
-      baseURL: "https://ai.gateway.lovable.dev/v1",
-      apiKey,
-      headers: { "Lovable-API-Key": apiKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
-    });
     let doLink = "";
     if (data.link?.trim()) {
       const { lerLink, pareceCardapio } = await import("./link.server");
@@ -101,7 +94,7 @@ export const analisarCardapio = createServerFn({ method: "POST" })
     let providerError: unknown;
     const result = streamText({
       onError: ({ error }) => { providerError = error; },
-      model: openai.responses("openai/gpt-6-astra"),
+      model: createGeminiModel(),
       system: SYSTEM,
       maxRetries: 0,
       output: Output.object({ schema: resultadoSchema }),
@@ -114,15 +107,7 @@ export const analisarCardapio = createServerFn({ method: "POST" })
           ],
         },
       ],
-      providerOptions: {
-        openai: {
-          forceReasoning: true,
-          reasoningEffort: "low",
-          reasoningSummary: "auto",
-          store: false,
-          include: ["reasoning.encrypted_content"],
-        },
-      },
+      providerOptions: geminiOptions,
     });
     // Streaming errors are otherwise wrapped as NoOutputGeneratedError.
     try {
@@ -130,7 +115,7 @@ export const analisarCardapio = createServerFn({ method: "POST" })
       return applyPhotoRules(output as Resultado, data.imagens);
     } catch (error) {
       const original = providerError ?? error;
-      console.error('[analisarCardapio]', original);
+      console.error('[analisarCardapio]', { status: (await import('./analysis-errors')).aiErrorStatus(original) });
       throw new Error(aiErrorMessage(original, "Não consegui analisar o cardápio. Tente novamente."));
     }
   });

@@ -9,5 +9,6 @@
 - [x] Comparação até três concorrentes, destaque, ações e PDF.
 - [x] 11 testes; retorno real salvo; consulta pública não revela linhas; segurança sem alertas; mobile Sobre verificado.
 - [ ] Validar administração autenticada: aguarda Lana confirmar o convite e definir sua senha; Supabase externo não permite sessão de teste gerenciada.
-- [ ] Migrar todas as chamadas para Gemini com chave segura e testar análise/comparação.
-- [ ] Atualizar autoria piloto, LinkedIn e dados DoorDash; verificar e publicar.
+- [x] Migrar todas as chamadas para Gemini com chave segura; schema e regras preservados; 26 testes passaram.
+- [ ] Concluir verificação real de análise/comparação: Gemini retornou 503 e solicitações posteriores não concluíram.
+- [x] Atualizar autoria piloto, LinkedIn e dados DoorDash; telas verificadas e build OK.

@@ -29,7 +29,7 @@ use the editor.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
 
-- Menu analysis AI call lives in src/lib/analyze.functions.ts (server function, Responses API, zod schema) — keeps the key and prompt server-side.
+- All app AI calls use the direct Google provider via src/lib/gemini.server.ts and GEMINI_API_KEY inside handlers; analysis retains its Zod schema and photo post-processing to preserve the existing contract. This explicitly requested provider migration supersedes the gateway-only rule above for app calls.
 
 - Public research endpoints use capability-token-validated database RPCs, exposing only safe analysis fields; this prevents contact enumeration without visitor accounts.
 - Admin authorization is checked by Supabase against the confirmed account identity and by RLS, never browser state; no role/profile tables are added to the existing schema.
