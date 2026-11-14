@@ -6,6 +6,7 @@ export function aiErrorStatus(error: unknown): number | undefined {
 
 export function aiErrorMessage(error: unknown, fallback: string): string {
   const status = aiErrorStatus(error);
+  if (status === 503) return 'A IA está sobrecarregada agora. Tente de novo em 1 minuto.';
   if (isAIQuotaError(error)) return 'Os créditos de IA acabaram. Fale com o responsável pelo app.';
   if (status === 429) return 'Muitas análises agora. Tente de novo em instantes.';
   // The gateway's safe message distinguishes credits, policy and provider denials.

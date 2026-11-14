@@ -8,7 +8,7 @@ describe('Gemini', () => {
     vi.stubEnv('GEMINI_API_KEY', 'test-only');
     mocks.create.mockReturnValue(mocks.model);
     createGeminiModel();
-    expect(mocks.model).toHaveBeenCalledWith('gemini-3.8-flash');
+    expect(mocks.model).toHaveBeenCalledWith('gemini-3.5-flash-lite');
     vi.unstubAllEnvs();
   });
   it('mantém o aviso de muitas análises para limite temporário 429', () => {

@@ -44,6 +44,12 @@ export const resultadoSchema = z.object({
 });
 export type Resultado = z.infer<typeof resultadoSchema>;
 
+// Keep the public Zod contract; only remove provider-side numeric/array bounds.
+const geminiResultadoSchema = resultadoSchema.extend({
+  notaGeral: z.number(),
+  criterios: z.array(criterio.extend({nome: z.string(), nota: z.number().nullable()})),
+});
+
 const SYSTEM = `Você é um consultor de cardápios de delivery especializado em hamburguerias brasileiras. Responda sempre em português do Brasil, com tom amigável, direto e sem jargão.
 Leia o cardápio (texto e/ou fotos) e analise-o.
 REGRAS OBRIGATÓRIAS:
@@ -80,8 +86,8 @@ export const analisarCardapio = createServerFn({ method: "POST" })
     },
   )
   .handler(async ({ data }) => {
-    const { createGeminiModel, geminiOptions } = await import('./gemini.server');
-    const { streamText, Output } = await import("ai");
+    const { runGemini, geminiOptions } = await import('./gemini.server');
+    const { generateText, Output } = await import("ai");
     let doLink = "";
     if (data.link?.trim()) {
       const { lerLink, pareceCardapio } = await import("./link.server");
@@ -91,13 +97,13 @@ export const analisarCardapio = createServerFn({ method: "POST" })
         throw new Error("Não consegui ler esse link. Tente colar o texto do cardápio ou enviar prints (até 10).");
     }
     const intro = `Restaurante: ${data.nome || "(não informado)"}\n\nCardápio em texto:\n${data.texto || "(veja as fotos ou o link)"}${doLink ? `\n\nConteúdo extraído do link do cardápio (pode ter textos do site misturados; use só os itens do cardápio):\n${doLink}` : ""}`;
-    let providerError: unknown;
-    const result = streamText({
-      onError: ({ error }) => { providerError = error; },
-      model: createGeminiModel(),
+    try {
+    const output = await runGemini('analisarCardapio', async model => {
+    const result = await generateText({
+      model,
       system: SYSTEM,
       maxRetries: 0,
-      output: Output.object({ schema: resultadoSchema }),
+      output: Output.object({ schema: geminiResultadoSchema }),
       messages: [
         {
           role: "user",
@@ -109,13 +115,10 @@ export const analisarCardapio = createServerFn({ method: "POST" })
       ],
       providerOptions: geminiOptions,
     });
-    // Streaming errors are otherwise wrapped as NoOutputGeneratedError.
-    try {
-      const output = await result.output;
-      return applyPhotoRules(output as Resultado, data.imagens);
+    return result.output;
+    });
+      return applyPhotoRules(resultadoSchema.parse(output), data.imagens);
     } catch (error) {
-      const original = providerError ?? error;
-      console.error('[analisarCardapio]', { status: (await import('./analysis-errors')).aiErrorStatus(original) });
-      throw new Error(aiErrorMessage(original, "Não consegui analisar o cardápio. Tente novamente."));
+      throw new Error(aiErrorMessage(error, "Não consegui analisar o cardápio. Tente novamente."));
     }
   });

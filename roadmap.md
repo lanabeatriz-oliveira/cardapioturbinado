@@ -10,5 +10,6 @@
 - [x] 11 testes; retorno real salvo; consulta pública não revela linhas; segurança sem alertas; mobile Sobre verificado.
 - [ ] Validar administração autenticada: aguarda Lana confirmar o convite e definir sua senha; Supabase externo não permite sessão de teste gerenciada.
 - [x] Migrar todas as chamadas para Gemini com chave segura; schema e regras preservados; 26 testes passaram.
-- [ ] Concluir verificação real de análise/comparação: Gemini retornou 503 e solicitações posteriores não concluíram.
+- [x] Verificação real: análise por texto e concorrente por texto concluídos, comparação com três ações exibida.
+- [x] Causa confirmada: Flash 3.8 sobrecarregado (503 UNAVAILABLE / headers timeout); Flash-Lite 3.5 estável funciona. Schema compatível validado depois; 29 testes e build OK; versão preparada para publicação.
 - [x] Atualizar autoria piloto, LinkedIn e dados DoorDash; telas verificadas e build OK.

@@ -13,16 +13,17 @@ export const checkAI = createServerFn({method: 'POST'}).middleware([requireSupab
   if (error || !allowed) throw new Error('Acesso exclusivo da Lana.');
   const key = process.env['GEMINI_API_KEY'];
   if (!key) return {status: 'error' as const, message: 'A IA ainda não está configurada.'};
-  const {createGeminiModel, geminiOptions} = await import('./gemini.server');
-  const {streamText} = await import('ai');
-  let providerError: unknown;
+  const {runGemini, geminiOptions} = await import('./gemini.server');
+  const {generateText} = await import('ai');
   try {
-    const result = streamText({model: createGeminiModel(), maxRetries: 0, providerOptions: geminiOptions, onError: ({error}) => {providerError = error;}, prompt: 'Responda apenas OK.'});
-    const text = await result.text;
+    const text = await runGemini('checkAI', async model => {
+      const result = await generateText({model, maxRetries: 0, providerOptions: geminiOptions, prompt: 'Responda apenas OK.'});
+      return result.text;
+    });
     if (!text.trim()) return {status: 'error' as const, message: 'A IA não retornou uma resposta. Verificação encerrada.'};
     return {status: 'ok' as const, message: 'O Gemini respondeu a esta verificação. Isso não garante cota para outras análises; confira seus limites no Google AI Studio.'};
   } catch (error) {
-    const original = providerError ?? error;
+    const original = error;
     return aiFailure(isAIQuotaError(original) ? 402 : aiErrorStatus(original));
   }
 });

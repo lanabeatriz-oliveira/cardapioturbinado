@@ -29,7 +29,7 @@ use the editor.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
 
-- All app AI calls use the direct Google provider via src/lib/gemini.server.ts and GEMINI_API_KEY inside handlers; analysis retains its Zod schema and photo post-processing to preserve the existing contract. This explicitly requested provider migration supersedes the gateway-only rule above for app calls.
+- All app AI calls use the direct Google provider via src/lib/gemini.server.ts and GEMINI_API_KEY inside handlers; send unconstrained provider schemas and validate against the original Zod contract afterward. Retry only 503 twice with waits before the documented free Flash-Lite fallback, preserving terminal quota/auth failures. This requested migration supersedes the gateway-only rule above for app calls.
 
 - Public research endpoints use capability-token-validated database RPCs, exposing only safe analysis fields; this prevents contact enumeration without visitor accounts.
 - Admin authorization is checked by Supabase against the confirmed account identity and by RLS, never browser state; no role/profile tables are added to the existing schema.
